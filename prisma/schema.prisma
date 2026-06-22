@@ -1,0 +1,96 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum ClinicStatus {
+  pending
+  approved
+}
+
+enum ActiveStatus {
+  active
+  closed
+}
+
+// 1. Clinic Model
+model Clinic {
+  id                    String   @id @default(uuid()) 
+  owner_doctor_name     String
+  gmail                 String       @unique
+  password              String       @db.VarChar(255)
+  phone                 String       @unique
+  speciality            String
+  medical_council_reg_no String      @unique
+  experience            Int
+  qualification         String
+  clinic_name           String
+  address               String
+  city                  String
+  consultations_fee     Float        @default(0)
+  about_of_clinic       String?
+
+  is_verified           Boolean      @default(false)
+
+  status                ClinicStatus @default(pending)
+
+  current_active_status ActiveStatus @default(active)
+
+  created_at            DateTime     @default(now())
+  updated_at            DateTime     @updatedAt
+
+
+  appointments Appointment[] @relation("ClinicToAppointments")
+
+  @@map("clinics")
+}
+
+
+// 3. Patient Model (User)
+model Patient {
+  id        String   @id @default(uuid())
+  name      String   @db.VarChar(255)
+  email     String   @unique @db.VarChar(150)
+  password  String   @db.VarChar(255)
+  phone     String   @db.VarChar(50)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  appointments Appointment[] @relation("PatientToAppointments")
+
+  @@map("patients")
+}
+
+// 4. Appointment Model
+model Appointment {
+  id              String            @id @default(uuid())
+  appointmentDate DateTime          @map("appointment_date")
+  status          AppointmentStatus @default(PENDING)
+  notes           String?           @db.Text
+  patientId       String            @map("patient_id")
+  clinicId        String            @map("clinic_id")
+  createdAt       DateTime          @default(now()) @map("created_at")
+  updatedAt       DateTime          @updatedAt @map("updated_at")
+
+  // Relations
+  patient Patient @relation("PatientToAppointments", fields: [patientId], references: [id], onDelete: Cascade)
+  clinic  Clinic  @relation("ClinicToAppointments", fields: [clinicId], references: [id], onDelete: Cascade)
+
+  @@index([patientId])
+  @@index([clinicId])
+  @@map("appointments")
+}
+
+enum AppointmentStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+}
