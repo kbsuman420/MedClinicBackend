@@ -47,6 +47,7 @@ model Clinic {
 
 
   appointments Appointment[] @relation("ClinicToAppointments")
+  availabilitySlots DoctorAvailabilitySlot[] @relation("ClinicToAvailabilitySlots")
 
   @@map("clinics")
 }
@@ -93,4 +94,23 @@ enum AppointmentStatus {
   CONFIRMED
   CANCELLED
   COMPLETED
+}
+
+// 5. Doctor Availability Slot Model
+model DoctorAvailabilitySlot {
+  id          String   @id @default(uuid())
+  clinicId    String   @map("clinic_id")
+  dayOfWeek   Int      @map("day_of_week")
+  startTime   String   @map("start_time")
+  endTime     String   @map("end_time")
+  isAvailable Boolean  @default(true)      @map("is_available")
+  createdAt   DateTime @default(now())     @map("created_at")
+  updatedAt   DateTime @updatedAt          @map("updated_at")
+
+  // Relations
+  clinic Clinic @relation("ClinicToAvailabilitySlots", fields: [clinicId], references: [id], onDelete: Cascade)
+
+  @@index([clinicId])
+  @@index([dayOfWeek])
+  @@map("doctor_availability_slots")
 }
