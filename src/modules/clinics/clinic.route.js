@@ -4,6 +4,7 @@ import {
   getAllClinic,
   updateClinic,
   deleteClinic,
+  loginClinic,
 } from "./clinic.controller.js";
 
 const clinicRouter = Router();
@@ -19,5 +20,8 @@ clinicRouter.route("/update-clinic/:id").patch(updateClinic);
 
 // Delete clinic
 clinicRouter.route("/delete-clinic/:id").delete(deleteClinic);
+
+// Login clinic
+clinicRouter.route("/login").post(loginClinic);
 
 export default clinicRouter;
