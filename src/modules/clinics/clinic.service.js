@@ -18,7 +18,6 @@ export const createNewClinic = async (clinicData) => {
       about_of_clinic: clinicData.about_of_clinic || null,
       status: clinicData.status || "pending",
       current_active_status: clinicData.current_active_status || "active",
-      is_verified: clinicData.is_verified || false,
     },
   });
 };
@@ -81,3 +80,110 @@ export const findClinicByMedicalRegNo = async (medical_council_reg_no) => {
     where: { medical_council_reg_no },
   });
 };
+
+export const findPendingByGmail = async (gmail) => {
+  const pending = await prisma.emailVerification.findUnique({
+    where: { gmail },
+  });
+  if (!pending) return null;
+  return {
+    ...pending,
+    suspended_until: pending.locked_until,
+    last_otp_sent_at: pending.last_sent_at,
+    is_verified: pending.verified,
+  };
+};
+
+export const upsertPendingRegistration = async (gmail, otpHash, otpExpiresAt) => {
+  return await prisma.emailVerification.upsert({
+    where: { gmail },
+    update: {
+      otp_hash: otpHash,
+      otp_expires_at: otpExpiresAt,
+      otp_attempts: 0,
+      last_sent_at: new Date(),
+      verified: false,
+      locked_until: null,
+    },
+    create: {
+      gmail,
+      otp_hash: otpHash,
+      otp_expires_at: otpExpiresAt,
+      otp_attempts: 0,
+      last_sent_at: new Date(),
+      verified: false,
+    },
+  });
+};
+
+export const incrementOtpAttempts = async (gmail) => {
+  return await prisma.emailVerification.update({
+    where: { gmail },
+    data: {
+      otp_attempts: {
+        increment: 1,
+      },
+    },
+  });
+};
+
+export const suspendEmail = async (gmail, suspendedUntil) => {
+  return await prisma.emailVerification.update({
+    where: { gmail },
+    data: {
+      locked_until: suspendedUntil,
+      otp_attempts: 0,
+    },
+  });
+};
+
+export const markEmailAsVerified = async (gmail) => {
+  return await prisma.emailVerification.update({
+    where: { gmail },
+    data: {
+      verified: true,
+      otp_attempts: 0,
+      locked_until: null,
+    },
+  });
+};
+
+export const deletePendingRegistration = async (gmail) => {
+  return await prisma.emailVerification.delete({
+    where: { gmail },
+  });
+};
+
+export const registerVerifiedClinic = async (clinicData) => {
+  return await prisma.$transaction(async (tx) => {
+    // 1. Create Clinic record
+    const clinic = await tx.clinic.create({
+      data: {
+        owner_doctor_name: clinicData.owner_doctor_name,
+        gmail: clinicData.gmail,
+        password: clinicData.password,
+        phone: clinicData.phone,
+        speciality: clinicData.speciality,
+        medical_council_reg_no: clinicData.medical_council_reg_no,
+        experience: parseInt(clinicData.experience, 10),
+        qualification: clinicData.qualification,
+        clinic_name: clinicData.clinic_name,
+        address: clinicData.address,
+        city: clinicData.city,
+        consultations_fee: clinicData.consultations_fee ? parseFloat(clinicData.consultations_fee) : 0.0,
+        about_of_clinic: clinicData.about_of_clinic || null,
+        status: "pending",
+        current_active_status: "active",
+      },
+    });
+
+    // 2. Delete pending registration verification record
+    await tx.emailVerification.delete({
+      where: { gmail: clinicData.gmail },
+    });
+
+    return clinic;
+  });
+};
+
+
