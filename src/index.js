@@ -6,7 +6,7 @@ import { dbConnect, pool } from "./database/index.js";
 
 import app from "./app.js"
 
-const port = process.env.PORT || 8000;
+const port = process.env.PORT || 3000;
 
 await dbConnect().then(() => {
     app.listen(port, () => {

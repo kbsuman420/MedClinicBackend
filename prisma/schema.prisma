@@ -36,8 +36,6 @@ model Clinic {
   consultations_fee     Float        @default(0)
   about_of_clinic       String?
 
-  is_verified           Boolean      @default(false)
-
   status                ClinicStatus @default(pending)
 
   current_active_status ActiveStatus @default(active)
@@ -113,4 +111,27 @@ model DoctorAvailabilitySlot {
   @@index([clinicId])
   @@index([dayOfWeek])
   @@map("doctor_availability_slots")
+}
+
+
+model EmailVerification {
+  id              String   @id @default(uuid())
+
+  gmail           String   @unique
+
+  otp_hash        String
+  otp_attempts    Int      @default(0)
+
+  otp_expires_at  DateTime
+  last_sent_at    DateTime @default(now())
+
+  verified        Boolean  @default(false)
+
+  locked_until    DateTime?
+
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  @@index([gmail])
+  @@map("email_verifications")
 }

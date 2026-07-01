@@ -1,9 +1,9 @@
 import express from "express"
 import cors from "cors"
-
+import "./loadenv.js"
 import clinicRouter from "./modules/clinics/clinic.route.js"
 
-
+console.log("CORS_ORIGIN:", process.env.CORS_ORIGIN)
 const app = express();
 
 app.use(cors({
